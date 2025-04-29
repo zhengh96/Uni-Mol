@@ -118,11 +118,11 @@ class MolDataReader(object):
             'raw_target': targets,
             'num_classes': num_classes,
             'target_cols': target_cols,
-            'multiclass_cnt': (
-                multiclass_cnt if task == 'multiclass' and is_train else None
-            ),
+            'multiclass_cnt': (multiclass_cnt if task == 'multiclass' and is_train else None),
         }
-        if smiles_col in data.columns:
+
+        has_3d = ('atoms' in data.columns) and ('coordinates' in data.columns)
+        if not has_3d and smiles_col in data.columns:
             mask = data[smiles_col].apply(
                 lambda smi: self.check_smiles(smi, is_train, smi_strict)
             )
@@ -135,8 +135,6 @@ class MolDataReader(object):
 
         if split_group_col in data.columns:
             dd['group'] = data[split_group_col].tolist()
-        elif split_group_col == 'scaffold':
-            dd['group'] = dd['scaffolds']
         else:
             dd['group'] = None
 
