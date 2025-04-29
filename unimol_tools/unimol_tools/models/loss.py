@@ -5,6 +5,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
+from typing import List, Optional, Union
 
 
 class GHM_Loss(nn.Module):
@@ -173,21 +174,45 @@ class GHMR_Loss(GHM_Loss):
         return d / torch.sqrt(d * d + mu * mu)
 
 
-def MAEwithNan(y_pred, y_true):
-    """
-    Calculates the Mean Absolute Error (MAE) loss, ignoring NaN values in the target.
+class MAEwithNan(nn.Module):
+    def __init__(
+        self,
+        weight: Optional[Union[torch.Tensor, float]] = None
+    ):
+        super().__init__()
+        if weight is not None:
+            w = torch.tensor(weight, dtype=torch.float32) if not torch.is_tensor(weight) else weight
+            self.register_buffer('weight', w)
+        else:
+            self.weight = None
 
-    :param y_pred: (torch.Tensor) Predicted values.
-    :param y_true: (torch.Tensor) Ground truth values, may contain NaNs.
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        diff = torch.abs(y_pred - y_true) 
+        if self.weight is not None:
+            diff = diff * self.weight.to(y_pred.device)
+        loss = torch.nanmean(diff)
+        return loss
 
-    :return: (torch.Tensor) MAE loss computed only on non-NaN elements.
-    """
-    mask = ~torch.isnan(y_true)
-    y_pred = y_pred[mask]
-    y_true = y_true[mask]
-    mae_loss = nn.L1Loss()
-    loss = mae_loss(y_pred, y_true)
-    return loss
+
+
+class MSEwithNan(nn.Module):
+    def __init__(
+        self,
+        weight: Optional[Union[torch.Tensor, float]] = None
+    ):
+        super().__init__()
+        if weight is not None:
+            w = torch.tensor(weight, dtype=torch.float32) if not torch.is_tensor(weight) else weight
+            self.register_buffer('weight', w)
+        else:
+            self.weight = None
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        diff = (y_pred - y_true)**2
+        if self.weight is not None:
+            diff = diff * self.weight.to(y_pred.device)
+        loss = torch.nanmean(diff)
+        return loss
 
 
 def FocalLoss(y_pred, y_true, alpha=0.25, gamma=2):

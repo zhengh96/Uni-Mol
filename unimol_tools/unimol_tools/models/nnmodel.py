@@ -14,7 +14,7 @@ from torch.nn import functional as F
 from torch.utils.data import Dataset
 
 from ..utils import logger
-from .loss import FocalLossWithLogits, GHMC_Loss, MAEwithNan, myCrossEntropyLoss
+from .loss import FocalLossWithLogits, GHMC_Loss, myCrossEntropyLoss, MAEwithNan, MSEwithNan
 from .unimol import UniMolModel
 from .unimolv2 import UniMolV2Model
 
@@ -32,7 +32,10 @@ LOSS_RREGISTER = {
         'ghm': GHMC_Loss(bins=10, alpha=0.5),
         'focal': FocalLossWithLogits,
     },
-    'multilabel_regression': MAEwithNan,
+    'multilabel_regression': {
+        "mae": MAEwithNan,
+        "mse": MSEwithNan,
+    },
 }
 
 
@@ -106,6 +109,10 @@ class NNModel(object):
             if self.loss_key is None:
                 self.loss_key = 'focal'
             self.loss_func = LOSS_RREGISTER[self.task][self.loss_key]
+        elif self.task == 'multilabel_regression':
+            if self.loss_key is None:
+                self.loss_key = 'mse'
+            self.loss_func = LOSS_RREGISTER[self.task][self.loss_key](params.get('label_weight', None))
         else:
             self.loss_func = LOSS_RREGISTER[self.task]
         self.activation_fn = ACTIVATION_FN[self.task]

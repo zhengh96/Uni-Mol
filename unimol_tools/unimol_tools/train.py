@@ -54,6 +54,7 @@ class MolTrain(object):
         model_name='unimolv1',
         model_size='84m',
         conf_cache_level=1,
+        label_weight=None,
         **params,
     ):
         """
@@ -120,7 +121,7 @@ class MolTrain(object):
             - 0: no caching.
             - 1: cache if not exists.
             - 2: always cache.
-
+        :param label_weight: List[float], default=None, weight of each label. \
         """
         if load_model_dir is not None:
             config_path = os.path.join(load_model_dir, 'config.yaml')
@@ -159,6 +160,7 @@ class MolTrain(object):
         config.model_name = model_name
         config.model_size = model_size
         config.conf_cache_level = conf_cache_level
+        config.label_weight = label_weight
         self.save_path = save_path
         self.config = config
 
